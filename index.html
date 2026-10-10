@@ -146,6 +146,7 @@
   </section>
 </main>
 
+<script src="crossscript.js"></script>
 <script>
   const editor  = document.getElementById("editor");
   const consoleEl = document.getElementById("console");
@@ -184,11 +185,15 @@
     }
   }
 
-  // Placeholder interpreter: replace with the CrossScript runtime later.
-  // The interface it receives is: source code string, plus print/readLine helpers.
-  async function runCrossScript(source, io) {
-    io.print("CrossScript runtime not yet implemented.");
-    io.print("Source length: " + source.length + " characters.");
+  // Starter program
+  if (!editor.value.trim()) {
+    editor.value =
+`$$ Welcome to CrossScript
+out.print{Hello, world!}
+var.def{name}{Sam}
+var.def{age}{12}
+out.printvar{'Name: ' ~name}
+out.printvar{~age}`;
   }
 
   async function run() {
