@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrossScript</title>
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --panel: #181825;
+    --border: #313244;
+    --text: #cdd6f4;
+    --muted: #6c7086;
+    --accent: #89b4fa;
+    --ok: #a6e3a1;
+    --err: #f38ba8;
+    --font-mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header h1 span { color: var(--accent); }
+  .toolbar { display: flex; gap: 8px; }
+  button {
+    background: var(--accent);
+    color: #11111b;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button:hover { filter: brightness(1.1); }
+  button.secondary { background: var(--border); color: var(--text); }
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    min-height: 0;
+  }
+  @media (max-width: 800px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  }
+  .pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: 1px solid var(--border);
+  }
+  .pane:last-child { border-right: none; }
+  .pane-title {
+    padding: 6px 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  #editor {
+    flex: 1;
+    width: 100%;
+    resize: none;
+    border: none;
+    outline: none;
+    padding: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.5;
+    tab-size: 4;
+  }
+  #console {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    background: #11111b;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .line-out { color: var(--text); }
+  .line-in { color: var(--accent); }
+  .line-err { color: var(--err); }
+  .line-sys { color: var(--muted); font-style: italic; }
+  .input-row {
+    display: flex;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+  }
+  #stdin {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+  }
+  .input-row button { border-radius: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span>Cross</span>Script</h1>
+  <div class="toolbar">
+    <button id="run">▶ Run</button>
+    <button id="clear" class="secondary">Clear console</button>
+  </div>
+</header>
+
+<main>
+  <section class="pane">
+    <div class="pane-title">Source</div>
+    <textarea id="editor" spellcheck="false" placeholder="// Write your CrossScript code here"></textarea>
+  </section>
+
+  <section class="pane">
+    <div class="pane-title">Console</div>
+    <div id="console"></div>
+    <div class="input-row">
+      <input id="stdin" type="text" placeholder="Type input here and press Enter..." autocomplete="off">
+      <button id="send" class="secondary">Send</button>
+    </div>
+  </section>
+</main>
+
+<script>
+  const editor  = document.getElementById("editor");
+  const consoleEl = document.getElementById("console");
+  const stdin   = document.getElementById("stdin");
+  const runBtn  = document.getElementById("run");
+  const clearBtn = document.getElementById("clear");
+  const sendBtn = document.getElementById("send");
+
+  // Pending input requests from the running program
+  let inputResolver = null;
+
+  function log(text, cls = "line-out") {
+    const div = document.createElement("div");
+    div.className = cls;
+    div.textContent = text;
+    consoleEl.appendChild(div);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  // Console-based input: the program awaits a line typed by the user
+  function readLine(prompt = "") {
+    if (prompt) log(prompt, "line-out");
+    return new Promise(resolve => { inputResolver = resolve; });
+  }
+
+  function submitInput() {
+    const value = stdin.value;
+    stdin.value = "";
+    if (inputResolver) {
+      log("> " + value, "line-in");
+      const r = inputResolver;
+      inputResolver = null;
+      r(value);
+    } else {
+      log("(no program is waiting for input)", "line-sys");
+    }
+  }
+
+  // Placeholder interpreter: replace with the CrossScript runtime later.
+  // The interface it receives is: source code string, plus print/readLine helpers.
+  async function runCrossScript(source, io) {
+    io.print("CrossScript runtime not yet implemented.");
+    io.print("Source length: " + source.length + " characters.");
+  }
+
+  async function run() {
+    consoleEl.innerHTML = "";
+    log("— running —", "line-sys");
+    const io = {
+      print: (text) => log(String(text), "line-out"),
+      error: (text) => log(String(text), "line-err"),
+      readLine: (prompt) => readLine(prompt)
+    };
+    try {
+      await runCrossScript(editor.value, io);
+      log("— finished —", "line-sys");
+    } catch (err) {
+      log("Error: " + err.message, "line-err");
+    }
+  }
+
+  runBtn.addEventListener("click", run);
+  clearBtn.addEventListener("click", () => { consoleEl.innerHTML = ""; });
+  sendBtn.addEventListener("click", submitInput);
+  stdin.addEventListener("keydown", e => { if (e.key === "Enter") submitInput(); });
+
+  // Ctrl/Cmd + Enter runs the program; Tab inserts indentation
+  editor.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); run(); }
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const s = editor.selectionStart, end = editor.selectionEnd;
+      editor.value = editor.value.substring(0, s) + "    " + editor.value.substring(end);
+      editor.selectionStart = editor.selectionEnd = s + 4;
+    }
+  });
+</script>
+</body>
+</html>
